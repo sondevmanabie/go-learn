@@ -1,9 +1,12 @@
 package file_reader
 
 import (
+	"errors"
 	"reflect"
 	"rest-api/ent"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEntityReader_Read(t *testing.T) {
@@ -12,10 +15,11 @@ func TestEntityReader_Read(t *testing.T) {
 		Path   string
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		want    interface{}
-		wantErr bool
+		name       string
+		fields     fields
+		want       interface{}
+		wantErr    bool
+		wantErrMsg error
 	}{
 		{
 			name: "Should read student file correctly",
@@ -41,9 +45,9 @@ func TestEntityReader_Read(t *testing.T) {
 			want: []ent.Book{
 				{
 					Id:      "1",
-					Title:   "The Hobbit",
+					Title:   "Dune",
 					Author:  "Son",
-					Publish: true,
+					Publish: false,
 				},
 			},
 			wantErr: false,
@@ -54,8 +58,9 @@ func TestEntityReader_Read(t *testing.T) {
 				Entity: "course",
 				Path:   "data-test",
 			},
-			want:    nil,
-			wantErr: true,
+			want:       nil,
+			wantErr:    true,
+			wantErrMsg: errors.New("not match any entity"),
 		},
 	}
 
@@ -87,6 +92,9 @@ func TestEntityReader_Read(t *testing.T) {
 			if !reflect.DeepEqual(receive, tt.want) {
 				t.Errorf("EntityReader.Read() receive = %v, expect %v", receive, tt.want)
 			}
+			if tt.wantErrMsg != nil {
+				assert.Containsf(t, err.Error(), tt.wantErrMsg.Error(), "EntityReader.Read() receive error = %q, expect %q", tt.wantErrMsg, err)
+			}
 		})
 	}
 }
@@ -100,26 +108,55 @@ func TestEntityReader_Write(t *testing.T) {
 		data interface{}
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name       string
+		fields     fields
+		args       args
+		wantErr    bool
+		wantErrMsg error
 	}{
 		{
-			name: "Should write data correctly",
+			name: "Should write student data correctly",
 			fields: fields{
 				Entity: "student",
 				Path:   "../data-test",
 			},
 			args: args{
-				data: ent.Student{
+				data: []ent.Student{{
 					Id:     "1",
 					Name:   "Son",
 					Age:    23,
 					Active: true,
-				},
+				}},
 			},
 			wantErr: false,
+		},
+		{
+			name: "Should write book data correctly",
+			fields: fields{
+				Entity: "book",
+				Path:   "../data-test",
+			},
+			args: args{
+				data: []ent.Book{{
+					Id:      "1",
+					Title:   "Dune",
+					Author:  "Son",
+					Publish: false,
+				}},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Should throw error when file not found",
+			fields: fields{
+				Entity: "course",
+				Path:   "../data-test",
+			},
+			args: args{
+				data: nil,
+			},
+			wantErr:    true,
+			wantErrMsg: errors.New("not match any entity"),
 		},
 	}
 	for _, tt := range tests {
@@ -128,8 +165,12 @@ func TestEntityReader_Write(t *testing.T) {
 				Entity: tt.fields.Entity,
 				Path:   tt.fields.Path,
 			}
-			if err := r.Write(tt.args.data); (err != nil) != tt.wantErr {
-				t.Errorf("EntityReader.Write() error = %v, wantErr %v", err, tt.wantErr)
+			err := r.Write(tt.args.data)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EntityReader.Write() error = %v, wantErr %v", err, tt.wantErrMsg)
+			}
+			if tt.wantErrMsg != nil {
+				assert.Containsf(t, err.Error(), tt.wantErrMsg.Error(), "EntityReader.Write() receive error = %q, expect %q", tt.wantErrMsg, err)
 			}
 		})
 	}

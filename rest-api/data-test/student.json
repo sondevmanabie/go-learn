@@ -1,8 +1,1 @@
-[
-  {
-    "Id": "1",
-    "Name": "Son",
-    "Age": 23,
-    "Active": true
-  }
-]
+[{"Id":"1","Name":"Son","Age":23,"Active":true}]
