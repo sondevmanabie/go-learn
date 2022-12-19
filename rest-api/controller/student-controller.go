@@ -14,12 +14,12 @@ type StudentController struct {
 
 func (c *StudentController) Get(ctx *gin.Context) {
 	var res []ent.Student
-	_, err := c.FileReader.Read(&res)
+	data, err := c.FileReader.Read(&res)
 	if err != nil {
 		ctx.IndentedJSON(http.StatusNotFound, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, res)
+	ctx.IndentedJSON(http.StatusOK, data)
 }
 
 func (c *StudentController) Add(ctx *gin.Context) {
